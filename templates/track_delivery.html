@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="text-center mb-4">Track Your Delivery</h2>
+        <form method="GET" class="d-flex mb-4">
+            <input type="text" name="order_id" class="form-control me-2" placeholder="Enter Order ID" value="{{ request.GET.order_id|default:'' }}" aria-label="Order ID">
+            <button type="submit" class="btn btn-primary">Track</button>
+        </form>
+
+        {% if delivery %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Order #{{ delivery.order_id }}</h5>
+                <p><strong>Status:</strong> {{ delivery.status|title }}</p>
+                <p><strong>Destination:</strong> {{ delivery.destination }}</p>
+                <p><strong>ETA:</strong> {{ delivery.eta }}</p>
+                {% if latest_location %}
+                <div id="map" style="height: 400px; width: 100%;"></div>
+                {% else %}
+                <p class="text-muted">No location data available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% elif request.GET.order_id %}
+        <div class="alert alert-warning">No delivery found for Order ID: {{ request.GET.order_id }}</div>
+        {% endif %}
+    </div>
+</div>
+
+{% if latest_location %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap" async defer></script>
+<script>
+    function initMap() {
+        const location = { lat: {{ latest_location.latitude }}, lng: {{ latest_location.longitude }} };
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 14,
+            center: location,
+        });
+        new google.maps.Marker({
+            position: location,
+            map: map,
+            title: "Delivery Vehicle",
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

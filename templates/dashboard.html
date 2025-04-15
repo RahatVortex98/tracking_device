@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Fleet Dashboard</h2>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Live Map</h5>
+                <div id="map" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Recent Alerts</h5>
+                <ul class="list-group">
+                    {% for alert in alerts %}
+                    <li class="list-group-item {% if alert.severity == 'high' %}list-group-item-danger{% elif alert.severity == 'medium' %}list-group-item-warning{% endif %}">
+                        {{ alert.message }} - {{ alert.timestamp }}
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item">No alerts.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">Vehicles</h5>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Vehicle</th>
+                    <th>Latest Location</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehicle in vehicles %}
+                <tr>
+                    <td>{{ vehicle.name }}</td>
+                    <td>
+                        {% with loc=locations.vehicle.id %}
+                        {% if loc %}
+                        {{ loc.latitude }}, {{ loc.longitude }} ({{ loc.timestamp }})
+                        {% else %}
+                        No data
+                        {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% with delivery=vehicle.delivery_set.last %}
+                        {{ delivery.status|default:'Idle'|title }}
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3">No vehicles.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap" async defer></script>
+<script>
+    function initMap() {
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 10,
+            center: { lat: 37.7749, lng: -122.4194 },  // Default: San Francisco
+        });
+        {% for vehicle in vehicles %}
+        {% with loc=locations.vehicle.id %}
+        {% if loc %}
+        new google.maps.Marker({
+            position: { lat: {{ loc.latitude }}, lng: {{ loc.longitude }} },
+            map: map,
+            title: "{{ vehicle.name }}",
+        });
+        {% endif %}
+        {% endwith %}
+        {% endfor %}
+    }
+</script>
+{% endblock %}
